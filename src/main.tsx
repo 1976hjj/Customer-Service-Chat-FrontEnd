@@ -1,8 +1,7 @@
-import { StrictMode } from "react";
+import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Bot, ChevronDown, Circle, Loader2, Send, Sparkles, UserRound, Wifi, WifiOff } from "lucide-react";
 import "./styles.css";
-import { useEffect, useMemo, useRef, useState } from "react";
 
 type Sentiment = {
   label: string;
@@ -23,6 +22,15 @@ type ToolCall = {
   result: unknown;
 };
 
+type LlmCall = {
+  task: string;
+  provider: string;
+  model: string;
+  request: unknown;
+  raw_response: string;
+  parsed_response?: unknown;
+};
+
 type ChatResponse = {
   session_id: string;
   user_id: string;
@@ -36,6 +44,7 @@ type ChatResponse = {
   citations: unknown[];
   react_steps: string[];
   llm: Record<string, unknown>;
+  llm_calls: LlmCall[];
 };
 
 type ChatMessage = {
@@ -50,7 +59,8 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? "http://127.0.0.1:8000";
 const quickPrompts = [
   "你好，在吗",
   "订单 O20260617001 到哪了",
-  "苹果有没有货，怎么保存",
+  "介绍一下阿克苏苹果",
+  "苹果有没有货，给我推荐一下",
   "订单 O20260617001 的苹果坏了，帮我申请售后赔付",
 ];
 
@@ -84,12 +94,14 @@ function App() {
   async function sendMessage(content = text.trim()) {
     if (!content || isSending) return;
 
-    const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content,
-    };
-    setMessages((current) => [...current, userMessage]);
+    setMessages((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        role: "user",
+        content,
+      },
+    ]);
     setText("");
     setIsSending(true);
 
@@ -109,13 +121,15 @@ function App() {
       }
 
       const data = (await response.json()) as ChatResponse;
-      const assistantMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: data.reply,
-        meta: data,
-      };
-      setMessages((current) => [...current, assistantMessage]);
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: data.reply,
+          meta: data,
+        },
+      ]);
       setSelectedMeta(data);
     } catch (error) {
       setMessages((current) => [
@@ -234,7 +248,7 @@ function AgentInspector({ meta }: { meta: ChatResponse | null }) {
       <div className="empty-inspector">
         <Circle size={10} />
         <h2>Agent 过程</h2>
-        <p>发送一条消息后，这里会显示意图、路由、工具调用和 ReAct 步骤。</p>
+        <p>发送一条消息后，这里会显示意图、路由、工具调用、ReAct 步骤和 LLM 返回结果。</p>
       </div>
     );
   }
@@ -271,6 +285,22 @@ function AgentInspector({ meta }: { meta: ChatResponse | null }) {
             <details key={`${tool.name}-${index}`}>
               <summary>{tool.name}</summary>
               <pre>{JSON.stringify({ arguments: tool.arguments, result: tool.result }, null, 2)}</pre>
+            </details>
+          ))
+        )}
+      </section>
+
+      <section className="debug-section">
+        <h3>LLM Calls</h3>
+        {!meta.llm_calls?.length ? (
+          <p className="muted">没有记录到 LLM 调用</p>
+        ) : (
+          meta.llm_calls.map((call, index) => (
+            <details key={`${call.task}-${index}`}>
+              <summary>
+                {index + 1}. {call.task}
+              </summary>
+              <pre>{JSON.stringify(call, null, 2)}</pre>
             </details>
           ))
         )}

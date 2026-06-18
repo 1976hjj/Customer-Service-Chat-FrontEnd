@@ -17,6 +17,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow: hidden;
 }
 
 button,
@@ -32,7 +33,8 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 22px;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   padding: 24px;
   background:
     radial-gradient(circle at 18% 0%, rgba(174, 219, 255, 0.42), transparent 32%),
@@ -41,7 +43,8 @@ button {
 
 .chat-panel,
 .debug-panel {
-  min-height: calc(100vh - 48px);
+  min-height: 0;
+  height: calc(100vh - 48px);
   border: 1px solid rgba(151, 164, 186, 0.28);
   background: rgba(255, 255, 255, 0.74);
   box-shadow: 0 28px 72px rgba(51, 70, 98, 0.12);
@@ -51,6 +54,7 @@ button {
 .chat-panel {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
+  min-height: 0;
   overflow: hidden;
   border-radius: 28px;
 }
@@ -147,11 +151,37 @@ button {
 }
 
 .message-list {
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   padding: 18px 24px 28px;
   background:
     linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.55)),
     repeating-linear-gradient(0deg, transparent 0, transparent 39px, rgba(143, 158, 181, 0.05) 40px);
+}
+
+.message-list::-webkit-scrollbar,
+.debug-panel::-webkit-scrollbar {
+  width: 10px;
+}
+
+.message-list::-webkit-scrollbar-track,
+.debug-panel::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.48);
+  border-radius: 999px;
+}
+
+.message-list::-webkit-scrollbar-thumb,
+.debug-panel::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background: rgba(126, 145, 171, 0.58);
+}
+
+.message-list::-webkit-scrollbar-thumb:hover,
+.debug-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(92, 111, 138, 0.72);
 }
 
 .message-row {
@@ -397,8 +427,15 @@ pre {
 }
 
 @media (max-width: 980px) {
+  body {
+    overflow: auto;
+  }
+
   .app-shell {
     grid-template-columns: 1fr;
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
     padding: 12px;
   }
 
